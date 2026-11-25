@@ -117,6 +117,21 @@ body.inset-aberto #inset{display:flex}
 #dica ol{margin:4px 0 0;padding-left:16px}
 .mk{font:800 12px "Bricolage Grotesque";color:#08110f;background:#f4dc9c;padding:3px 8px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}
 .mun{font:700 11px Manrope;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;pointer-events:none}
+#tour{top:16px;left:50%;transform:translateX(-50%);width:min(760px,calc(100vw - 32px));padding:14px 18px 12px;display:none}
+body.tour #tour{display:block}
+body.tour #pnl-esq,body.tour #pnl-dir{display:none}
+body.tour #tl{left:16px;right:16px}
+body.tour.inset-aberto #tl{right:auto;width:340px;grid-template-columns:1fr}
+body.tour.inset-aberto #tl-graf,body.tour.inset-aberto #tl-leg,body.tour.inset-aberto #tl-num{display:none}
+#tour-tit{font:800 20px/1.15 "Bricolage Grotesque";color:var(--acc);margin-bottom:4px}
+#tour-txt{font-size:14px;line-height:1.45}
+#tour-ctl{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+#tour-ctl button{font:inherit;color:var(--tx);cursor:pointer;border:1px solid var(--line);background:var(--chip);border-radius:9px;padding:4px 10px;font-size:12.5px;font-weight:700}
+#tour-ctl button:hover{border-color:var(--acc2)}
+#tour-rec.on{background:#b3261e;border-color:#e0584f;color:#fff}
+#tour-pos{flex:1;display:flex;gap:5px;align-items:center;justify-content:center}
+#tour-pos i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+#tour-pos i.on{background:var(--acc)}
 #carregando{position:fixed;inset:0;display:grid;place-items:center;z-index:20;background:var(--bg);color:var(--tx2);font-weight:600;transition:opacity .5s}
 #carregando.fim{opacity:0;pointer-events:none}
 #bt-painel{display:none}
@@ -175,6 +190,9 @@ body.inset-aberto #inset{display:flex}
   <input type="range" id="ex" min="1" max="60" step="1">
   <div class="rot">Opacidade do corredor <output id="op-v"></output></div>
   <input type="range" id="op" min="0" max="1" step="0.05">
+  <div class="rot">Terreno real (SRTM) <output id="tt-v"></output></div>
+  <label class="tg"><input type="checkbox" id="tg-terreno" checked> Relevo do terreno em 3D, com céu e sombreamento</label>
+  <input type="range" id="tt" min="1" max="6" step="0.5">
 
   <div class="rot">Janelas de detalhe · 30 m</div>
   <div class="janelas" id="lista-janelas"></div>
@@ -187,6 +205,7 @@ body.inset-aberto #inset{display:flex}
   </div>
 
   <div class="acoes">
+    <button id="bt-tour" style="flex-basis:100%;background:var(--chip-on);border-color:var(--acc2);color:var(--acc)">▶ Modo apresentação (tour guiado e vídeo)</button>
     <button id="bt-corredor">Ir ao corredor</button>
     <button id="bt-planeta">Ver o planeta</button>
     <button id="bt-png">Salvar PNG</button>
@@ -200,6 +219,8 @@ body.inset-aberto #inset{display:flex}
     <p><b>Mapa:</b> o corredor inteiro em 3D sobre a imagem de satélite, em blocos de <span id="bloco-m"></span>. A altura é a fração do bloco coberta por vegetação nativa no ano (floresta, savana, campo, campo alagado, afloramento): onde há supressão, o relevo afunda. A cor é a classe dominante do bloco ou a mudança em relação a 2014. Use a opacidade para ver o satélite por baixo.</p>
     <p><b>Janela 3D</b> (canto inferior direito): cada pixel de 30 m é um bloco; a vegetação nativa aparece elevada (marcador, não altura real). Passe o cursor para ver a trajetória do pixel ano a ano.</p>
     <p><b>Mudança desde 2014:</b> supressão = nativa em 2014 e uso antrópico no ano; regeneração = uso antrópico em 2014 e nativa no ano.</p>
+    <p><b>Terreno:</b> modelo digital de elevação (SRTM e outras fontes, AWS Terrain Tiles) com sombreamento e céu atmosférico; o corredor fica assentado sobre o terreno.</p>
+    <p><b>Modo apresentação:</b> tour guiado com voos de câmera e legendas; "Gravar vídeo" salva o tour inteiro em MP4 (H.264) no Chrome e no Edge, ou em WebM nos outros navegadores.</p>
     <p>Imagem de satélite: Esri World Imagery. Visual inspirado em <i>lidar-mangrove-canopy</i> (linaq11).</p>
   </details>
 </section>
@@ -239,6 +260,18 @@ body.inset-aberto #inset{display:flex}
   <div id="ins-rod">Cada pixel de 30 m é um bloco; nativa elevada (marcador) · acompanha a linha do tempo · arraste para girar, role para aproximar.</div>
 </section>
 
+<section class="painel" id="tour">
+  <div id="tour-tit"></div>
+  <div id="tour-txt"></div>
+  <div id="tour-ctl">
+    <button id="tour-ant" title="Anterior">◀</button>
+    <button id="tour-pausa" title="Pausar">❚❚</button>
+    <button id="tour-prox" title="Próximo">▶</button>
+    <span id="tour-pos"></span>
+    <button id="tour-rec" title="Grava o tour inteiro em vídeo MP4 (ou WebM): mapa, janela 3D e legendas">● Gravar vídeo</button>
+    <button id="tour-sair" title="Sair do modo apresentação">✕</button>
+  </div>
+</section>
 <div id="dica"></div>
 <div id="carregando">Descompactando 11 anos de uso e cobertura…</div>
 
@@ -252,7 +285,7 @@ const CL = D.classes, COR = CL.map(c => new THREE.Color(c[2])), NATIVA = CL.map(
 const VERDE = new THREE.Color('#2f8f57'), BEGE = new THREE.Color('#d9cfa3'), VERM = new THREE.Color('#d7191c'), AZUL = new THREE.Color('#4fb3e8'), AGUA = new THREE.Color('#2532e4');
 const CODIGO_AGUA = new Set([26, 33]);
 const H_NAT = 100, H_VOX = 30;
-const S = { t: 0, tocando: false, cor: 'lulc', alt: 'nat', ex: 15, exJ: 4, op: 0.9, janela: -1, comparar: false, mun: true, lim: true, loop: false, grande: false };
+const S = { t: 0, tocando: false, cor: 'lulc', alt: 'nat', ex: 15, exJ: 4, op: 0.9, janela: -1, comparar: false, mun: true, lim: true, loop: false, grande: false, terreno: true, T: 2.5 };
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -294,13 +327,19 @@ const G = { anos: [] }, cacheJ = {};
 async function dadosJanela(w) { if (!cacheJ[w]) cacheJ[w] = await dz(D.janelas[w].cls); return cacheJ[w]; }
 
 // ================= MAPA =================
+const TERRARIUM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+window.__mapa = null;
 const map = new maplibregl.Map({
   container: 'mapa', center: M.centro_ll, zoom: 1.3, maxPitch: 80, preserveDrawingBuffer: true, attributionControl: { compact: true },
   style: { version: 8,
     sources: { sat: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-      attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' } },
-    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#0b1a26' } }, { id: 'sat', type: 'raster', source: 'sat' }] },
+      attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' },
+      dem: { type: 'raster-dem', tiles: [TERRARIUM], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Relevo: AWS Terrain Tiles (SRTM e outras fontes)' },
+      demhs: { type: 'raster-dem', tiles: [TERRARIUM], encoding: 'terrarium', tileSize: 256, maxzoom: 14 } },
+    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#0b1a26' } }, { id: 'sat', type: 'raster', source: 'sat' },
+      { id: 'relevo', type: 'hillshade', source: 'demhs', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#0a1410', 'hillshade-highlight-color': '#fff6de', 'hillshade-accent-color': '#2a2a1a' } }] },
 });
+window.__mapa = map;
 const estiloPronto = new Promise(r => {
   const iv = setInterval(() => { if (map.style && map.style._loaded) { clearInterval(iv); r(); } }, 100);
   map.once('load', () => { clearInterval(iv); r(); });
@@ -314,11 +353,52 @@ const camadaCorredor = {
   id: 'corredor3d', type: 'custom', renderingMode: '3d',
   onAdd(m, gl) { rendMapa = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true }); rendMapa.autoClear = false; },
   render(gl, matrix) {
-    escGeral.scale.z = S.ex * fatorZoom();
+    const f = fatorZoom();
+    if (zSujo || Math.abs(f - fZ) > 0.02 * fZ) { aplicarZ(f); fZ = f; zSujo = false; }
+    if (normaisSujas && !map.isMoving() && !S.tocando) { geoG.computeVertexNormals(); normaisSujas = false; }
     camMapa.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(modelo);
     rendMapa.resetState(); rendMapa.render(cena, camMapa);
   },
 };
+
+// relevo: altura do terreno (DEM Terrarium, z 10) em cada vértice, somada à altura do dado exagerada
+let elevG = null, hG = null, fZ = 1, zSujo = true, normaisSujas = true, demPronto = Promise.resolve(), amostraDEM = () => 0;
+function aplicarZ(f) {
+  if (!geoG || !hG) return;
+  const pos = geoG.attributes.position.array, n = hG.length, usaT = S.terreno && elevG;
+  for (let k = 0; k < n; k++) pos[3 * k + 2] = (usaT ? elevG[k] * S.T : 0) + hG[k] * S.ex * f;
+  geoG.attributes.position.needsUpdate = true; normaisSujas = true;
+}
+const elevCel = (c, l) => (S.terreno && elevG ? Math.max(0, amostraDEM(...cel2ll(c, l))) * S.T : 0);
+async function carregarDEM() {
+  const z = 10, N = 2 ** z * 256, R = Math.PI / 180;
+  const gx = lo => (lo + 180) / 360 * N, gy = la => (1 - Math.log(Math.tan(la * R) + 1 / Math.cos(la * R)) / Math.PI) / 2 * N;
+  const cs = [[0, 0], [M.W, 0], [M.W, M.H], [0, M.H]].map(([c, l]) => cel2ll(c, l));
+  const x0 = Math.floor(gx(Math.min(...cs.map(p => p[0]))) / 256), x1 = Math.floor(gx(Math.max(...cs.map(p => p[0]))) / 256);
+  const y0 = Math.floor(gy(Math.max(...cs.map(p => p[1]))) / 256), y1 = Math.floor(gy(Math.min(...cs.map(p => p[1]))) / 256);
+  const tiles = {}, cv = document.createElement('canvas'); cv.width = cv.height = 256; const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const lista = []; for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) lista.push([x, y]);
+  await Promise.all(lista.map(async ([x, y]) => {
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.src = TERRARIUM.replace('{z}', z).replace('{x}', x).replace('{y}', y); await img.decode();
+    ctx.drawImage(img, 0, 0); const d = ctx.getImageData(0, 0, 256, 256).data, e = new Float32Array(65536);
+    for (let i = 0; i < 65536; i++) e[i] = d[4 * i] * 256 + d[4 * i + 1] + d[4 * i + 2] / 256 - 32768;
+    tiles[x + ',' + y] = e;
+  }));
+  const px = (ix, iy) => { const t = tiles[(ix >> 8) + ',' + (iy >> 8)]; return t ? t[(iy & 255) * 256 + (ix & 255)] : 0; };
+  amostraDEM = (lo, la) => { const X = gx(lo) - 0.5, Y = gy(la) - 0.5, ix = Math.floor(X), iy = Math.floor(Y), fx = X - ix, fy = Y - iy;
+    return (px(ix, iy) * (1 - fx) + px(ix + 1, iy) * fx) * (1 - fy) + (px(ix, iy + 1) * (1 - fx) + px(ix + 1, iy + 1) * fx) * fy; };
+  const { Wb, Hb, bloco: B } = M, e = new Float32Array(Wb * Hb);
+  for (let i = 0; i < Hb; i++) for (let j = 0; j < Wb; j++) e[i * Wb + j] = Math.max(0, amostraDEM(...cel2ll((j + 0.5) * B, (i + 0.5) * B)));
+  return e;
+}
+function aplicarTerreno() {
+  // ligar/desligar o terreno no meio de uma animação de câmera trava o MapLibre 4.7: espera a câmera parar
+  if (map.isMoving()) { map.once('moveend', aplicarTerreno); return; }
+  try { map.setTerrain(S.terreno && elevG ? { source: 'dem', exaggeration: S.T } : null); } catch (e) { console.warn(e); }
+  map.setLayoutProperty('relevo', 'visibility', S.terreno ? 'visible' : 'none');
+  zSujo = true;  map.triggerRepaint();
+}
 function iniciarGeral() {
   const { Wb, Hb, bloco: B } = M, n = Wb * Hb, pos = new Float32Array(n * 3);
   for (let i = 0; i < Hb; i++) for (let j = 0; j < Wb; j++) { const k = i * Wb + j, [x, y] = cel2local((j + 0.5) * B, (i + 0.5) * B); pos[3 * k] = x; pos[3 * k + 1] = y; }
@@ -332,7 +412,8 @@ function iniciarGeral() {
   }
   geoG.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
   matG = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: S.op, side: THREE.DoubleSide });
-  escGeral.add(new THREE.Mesh(geoG, matG));
+  const malha = new THREE.Mesh(geoG, matG); malha.frustumCulled = false; escGeral.add(malha);
+  hG = new Float32Array(n);
 }
 const cT = new THREE.Color(), cU = new THREE.Color();
 function corBlocoAno(k, a, c) {
@@ -350,13 +431,12 @@ function atualizarGeral(normais) {
   const N0 = G.anos[k0].nat, N1 = G.anos[k1].nat, plano = S.alt === 'plano';
   const pos = geoG.attributes.position.array, col = geoG.attributes.color.array;
   for (let k = 0; k < n; k++) {
-    pos[3 * k + 2] = plano ? 0 : (N0[k] + (N1[k] - N0[k]) * f) / 250 * H_NAT;
+    hG[k] = plano ? 0 : (N0[k] + (N1[k] - N0[k]) * f) / 250 * H_NAT;
     corBlocoAno(k, k0, cT); if (f > 0) { corBlocoAno(k, k1, cU); cT.lerp(cU, f); }
     col[3 * k] = cT.r; col[3 * k + 1] = cT.g; col[3 * k + 2] = cT.b;
   }
-  geoG.attributes.position.needsUpdate = true; geoG.attributes.color.needsUpdate = true;
-  if (normais || !normaisOk) { geoG.computeVertexNormals(); normaisOk = true; }
-  geoG.computeBoundingSphere(); map.triggerRepaint();
+  geoG.attributes.color.needsUpdate = true;
+  zSujo = true; map.triggerRepaint();
 }
 const munMk = [];
 function camadasMapa() {
@@ -588,7 +668,9 @@ function chips(id, attr, chave) {
   $(id).addEventListener('click', async e => { const b = e.target.closest('button'); if (!b) return; S[chave] = b.dataset[attr]; $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); atualizarGeral(true); legenda(); if (S.janela >= 0) await construirJanela(); });
 }
 chips('cor', 'c', 'cor'); chips('alt', 'a', 'alt');
-$('ex').addEventListener('input', e => { S.ex = +e.target.value; $('ex-v').textContent = '×' + S.ex; map.triggerRepaint(); });
+$('ex').addEventListener('input', e => { S.ex = +e.target.value; $('ex-v').textContent = '×' + S.ex; zSujo = true; map.triggerRepaint(); });
+$('tt').addEventListener('input', e => { S.T = +e.target.value; $('tt-v').textContent = '×' + S.T; aplicarTerreno(); });
+$('tg-terreno').addEventListener('change', e => { S.terreno = e.target.checked; aplicarTerreno(); });
 $('op').addEventListener('input', e => { S.op = +e.target.value; $('op-v').textContent = Math.round(S.op * 100) + '%'; matG.opacity = S.op; escGeral.visible = S.op > 0; map.triggerRepaint(); });
 $('tg-mun').addEventListener('change', e => { S.mun = e.target.checked; map.setLayoutProperty('municipios', 'visibility', S.mun ? 'visible' : 'none'); munMk.forEach(m => m.getElement().style.display = S.mun ? '' : 'none'); });
 $('tg-lim').addEventListener('change', e => { S.lim = e.target.checked; map.setLayoutProperty('limite', 'visibility', S.lim ? 'visible' : 'none'); });
@@ -610,6 +692,121 @@ $('bt-tema').addEventListener('click', () => { document.documentElement.dataset.
 $('bt-painel').addEventListener('click', () => $('pnl-dir').classList.toggle('aberto'));
 try { const t = localStorage.getItem('lulc3d-tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 
+// ---------- modo apresentação: roteiro do uso e cobertura da terra ----------
+// cada movimento para o anterior ANTES de escutar o moveend (senão o fim do voo interrompido resolve a etapa na hora)
+const voar = o => new Promise(r => { map.stop(); map.once('moveend', r); map.flyTo({ ...o, essential: true }); });
+const girar = (graus, ms) => new Promise(r => { map.stop(); map.once('moveend', r); map.easeTo({ bearing: map.getBearing() + graus, duration: ms, easing: t => t }); });
+function setOpacidade(v) { S.op = v; $('op').value = v; $('op-v').textContent = Math.round(v * 100) + '%'; matG.opacity = v; escGeral.visible = v > 0; map.triggerRepaint(); }
+function setGrande(v) { S.grande = v; $('inset').classList.toggle('grande', v); $('ins-grande').classList.toggle('on', v); setTimeout(tamanhoInset, 0); }
+function camCorredor() {
+  const cs = [[0, 0], [M.W, 0], [M.W, M.H], [0, M.H]].map(([c, l]) => cel2ll(c, l));
+  return map.cameraForBounds([[Math.min(...cs.map(p => p[0])), Math.min(...cs.map(p => p[1]))], [Math.max(...cs.map(p => p[0])), Math.max(...cs.map(p => p[1]))]],
+    { padding: { top: 170, bottom: 230, left: 60, right: 60 } });
+}
+async function setCor(c) { S.cor = c; $('cor').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.c === c)); atualizarGeral(true); legenda(); if (S.janela >= 0) await construirJanela(); }
+// toca a linha do tempo de 2014 a 2024 pelo relógio (não por quadro): mesma duração em qualquer máquina
+const tocarAnos = (ms = 13000) => new Promise(r => {
+  pausar(); const t0 = performance.now();
+  const passo = () => { const u = Math.min(1, (performance.now() - t0) / ms); irPara(u * (NA - 1), false);
+    if (u < 1 && TOUR.ativo) requestAnimationFrame(passo); else { irPara(Math.round(u * (NA - 1))); r(); } };
+  requestAnimationFrame(passo);
+});
+const NL = D.numeros, nomeDe = c => (CL.find(x => x[0] === c) || [c, 'classe ' + c])[1];
+const PASSOS = [
+  { tit: 'Corredor Ecológico da Bacia do Rio São Lourenço', txt: 'Mato Grosso, Brasil: uso e cobertura da terra do corredor entre o planalto do Cerrado e a planície do Pantanal, ano a ano de 2014 a 2024 (MapBiomas Coleção 11).',
+    acao: async () => { fecharJanela(); setOpacidade(0.9); setGrande(false); pausar(); irPara(0); await setCor('lulc'); map.jumpTo({ center: M.centro_ll, zoom: 1.4, pitch: 0, bearing: 0 }); await voar({ center: M.centro_ll, zoom: 4.3, pitch: 25, bearing: 0, duration: 5500 }); }, ms: 2200 },
+  { tit: 'O corredor sobre o relevo real', txt: 'Altura = fração de vegetação nativa em cada bloco de 300 m; cor = classe dominante, na paleta oficial do MapBiomas. Por baixo, o modelo de elevação e a imagem de satélite.',
+    acao: async () => { await voar({ ...camCorredor(), pitch: 62, bearing: -25, duration: 6500 }); }, ms: 1500 },
+  { tit: '2014 → 2024', txt: `A vegetação nativa passou de ${fmt(NL.nativa_ano[0])} ha para ${fmt(NL.nativa_ano[NL.nativa_ano.length - 1])} ha (${fmt(100 * (NL.nativa_ano[NL.nativa_ano.length - 1] - NL.nativa_ano[0]) / NL.nativa_ano[0], 1)}%). Onde há supressão, o relevo afunda.`,
+    acao: async () => { await Promise.all([tocarAnos(13000), girar(40, 13000)]); }, ms: 800 },
+  { tit: 'Mudança desde 2014', txt: `Entre 2014 e 2024: supressão de ${fmt(NL.sup_total)} ha (vermelho) e regeneração de ${fmt(NL.reg_total)} ha (azul).`,
+    acao: async () => { await setCor('mud'); await girar(35, 7000); }, ms: 300 },
+  { tit: 'Para onde foi a vegetação suprimida', txt: `${fmt(NL.destino[0][2], 1)}% virou ${nomeDe(NL.destino[0][0]).toLowerCase()} e ${fmt(NL.destino[1][2], 1)}% ${nomeDe(NL.destino[1][0]).toLowerCase()}.`,
+    acao: async () => { await girar(35, 7000); }, ms: 300 },
+  { tit: 'Onde mais se suprimiu', txt: `${NL.municipios[0][0]} (${fmt(NL.municipios[0][1])} ha) e ${NL.municipios[1][0]} (${fmt(NL.municipios[1][1])} ha) lideram a supressão entre os municípios do corredor.`,
+    acao: async () => { await setCor('lulc'); await girar(35, 7000); }, ms: 300 },
+  { tit: 'Guiratinga em 30 m', txt: `${D.janelas[0].nome}. À esquerda 2014; à direita, o ano da linha do tempo. Supressão na janela: ${fmt(D.janelas[0].sup_ha)} ha.`,
+    acao: async () => { setOpacidade(0.35); setGrande(true); S.comparar = true; $('ins-comparar').classList.add('on'); ctlJ.autoRotate = true; irPara(0); await abrirJanela(0); await new Promise(r => setTimeout(r, 2500)); await Promise.all([tocarAnos(12000), girar(30, 12000)]); }, ms: 2500 },
+  { tit: 'Explore', txt: 'Use a linha do tempo, troque a cor, clique nas janelas e passe o cursor sobre um pixel para ver a trajetória dele ano a ano.',
+    acao: async () => { ctlJ.autoRotate = false; fecharJanela(); setOpacidade(0.9); setGrande(false); S.comparar = false; $('ins-comparar').classList.remove('on'); await voar({ ...camCorredor(), pitch: 55, bearing: -12, duration: 5500 }); }, ms: 3500 },
+];
+
+const TOUR = { ativo: false, i: 0, pausado: false, token: 0 };
+function mostrarPasso() {
+  const p = PASSOS[TOUR.i]; $('tour-tit').textContent = p.tit; $('tour-txt').textContent = p.txt;
+  $('tour-pos').innerHTML = PASSOS.map((_, k) => `<i class="${k === TOUR.i ? 'on' : ''}"></i>`).join('');
+}
+async function rodarPasso(i) {
+  const tk = ++TOUR.token; TOUR.i = clamp(i, 0, PASSOS.length - 1); mostrarPasso();
+  await PASSOS[TOUR.i].acao(); if (tk !== TOUR.token) return;
+  await new Promise(r => setTimeout(r, PASSOS[TOUR.i].ms));
+  while (TOUR.pausado && tk === TOUR.token) await new Promise(r => setTimeout(r, 200));
+  if (tk !== TOUR.token || !TOUR.ativo) return;
+  if (TOUR.i < PASSOS.length - 1) rodarPasso(TOUR.i + 1); else if (GRAV.rec) pararGravacao();
+}
+async function entrarTour(i = 0) {
+  TOUR.ativo = true; TOUR.pausado = false; $('tour-pausa').textContent = '❚❚'; document.body.classList.add('tour');
+  $('tour-tit').textContent = 'Preparando o terreno…'; $('tour-txt').textContent = ''; await demPronto; map.stop();
+  await new Promise(r => setTimeout(r, 400)); if (TOUR.ativo) rodarPasso(i);
+}
+function sairTour() { TOUR.ativo = false; TOUR.token++; document.body.classList.remove('tour'); ctlJ.autoRotate = girando; if (GRAV.rec) pararGravacao(); }
+$('bt-tour').addEventListener('click', () => entrarTour(0));
+$('tour-sair').addEventListener('click', sairTour);
+$('tour-prox').addEventListener('click', () => rodarPasso(TOUR.i + 1));
+$('tour-ant').addEventListener('click', () => rodarPasso(TOUR.i - 1));
+$('tour-pausa').addEventListener('click', () => { TOUR.pausado = !TOUR.pausado; $('tour-pausa').textContent = TOUR.pausado ? '▶︎ Continuar' : '❚❚'; });
+addEventListener('keydown', e => { if (!TOUR.ativo) return; if (e.key === 'Escape') sairTour(); if (e.key === 'ArrowRight') rodarPasso(TOUR.i + 1); if (e.key === 'ArrowLeft') rodarPasso(TOUR.i - 1); });
+// gravação: compõe mapa + janela 3D + legenda num canvas e grava com MediaRecorder.
+// MP4 (H.264) quando o navegador suporta (Chrome/Edge): arquivo com duração, abre em qualquer player e no PowerPoint;
+// senão WebM. Um quadro é enviado ao gravador a cada desenho (captureStream(0) + requestFrame), em até 1920 px de largura.
+const GRAV = { rec: null, cv: null, ctx: null, partes: [], faixa: null, tipo: '', ext: 'webm', escala: 1, pr: null };
+function iniciarGravacao() {
+  if (!window.MediaRecorder) { alert('Este navegador não grava vídeo (MediaRecorder). Use Chrome, Edge ou Firefox.'); return; }
+  const opcoes = [['video/mp4;codecs=avc1.640028', 'mp4'], ['video/mp4;codecs=avc1.4d0028', 'mp4'], ['video/mp4', 'mp4'],
+                  ['video/webm;codecs=vp8', 'webm'], ['video/webm;codecs=vp9', 'webm'], ['video/webm', 'webm']];
+  const ok = opcoes.find(([t]) => MediaRecorder.isTypeSupported(t));
+  if (!ok) { alert('Nenhum formato de vídeo disponível neste navegador.'); return; }
+  [GRAV.tipo, GRAV.ext] = ok;
+  // cena mais leve durante a gravação: o mapa desenha em densidade 1
+  GRAV.pr = map.getPixelRatio(); if (GRAV.pr > 1) map.setPixelRatio(1);
+  const c = map.getCanvas(); GRAV.escala = Math.min(1, 1920 / c.width);
+  GRAV.cv = document.createElement('canvas');
+  GRAV.cv.width = Math.round(c.width * GRAV.escala / 2) * 2; GRAV.cv.height = Math.round(c.height * GRAV.escala / 2) * 2;   // H.264 pede dimensões pares
+  GRAV.ctx = GRAV.cv.getContext('2d');
+  const stream = GRAV.cv.captureStream(0); GRAV.faixa = stream.getVideoTracks()[0];
+  GRAV.partes = []; GRAV.rec = new MediaRecorder(stream, { mimeType: GRAV.tipo, videoBitsPerSecond: 5e6 });
+  GRAV.rec.ondataavailable = e => { if (e.data.size) GRAV.partes.push(e.data); };
+  GRAV.rec.onstop = () => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(GRAV.partes, { type: GRAV.tipo.split(';')[0] }));
+    a.download = ARQ_VIDEO + '.' + GRAV.ext; a.click(); GRAV.rec = null; GRAV.faixa = null;
+    if (GRAV.pr && GRAV.pr !== map.getPixelRatio()) map.setPixelRatio(GRAV.pr);
+  };
+  GRAV.rec.start(1000); $('tour-rec').classList.add('on'); $('tour-rec').textContent = '■ Parar e salvar (' + GRAV.ext.toUpperCase() + ')';
+}
+function pararGravacao() { if (GRAV.rec && GRAV.rec.state !== 'inactive') { GRAV.faixa?.requestFrame?.(); GRAV.rec.stop(); } $('tour-rec').classList.remove('on'); $('tour-rec').textContent = '● Gravar vídeo'; }
+$('tour-rec').addEventListener('click', async () => { if (GRAV.rec) { pararGravacao(); return; } await demPronto; iniciarGravacao(); if (GRAV.rec) rodarPasso(0); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && GRAV.rec) console.warn('A aba saiu de foco: o navegador pausa a animação e o vídeo fica parado nesse trecho.'); });
+function quebrar(ctx, txt, larg) { const ps = txt.split(' '), l = []; let a = ''; for (const p of ps) { const t = a ? a + ' ' + p : p; if (ctx.measureText(t).width > larg && a) { l.push(a); a = p; } else a = t; } if (a) l.push(a); return l; }
+function quadroGravacao() {
+  if (!GRAV.rec) return;
+  const c = map.getCanvas(), g = GRAV.ctx, k = GRAV.cv.width / c.clientWidth, W = GRAV.cv.width; g.drawImage(c, 0, 0, GRAV.cv.width, GRAV.cv.height);
+  if (S.janela >= 0) { const r = rendJ.domElement.getBoundingClientRect(); g.fillStyle = 'rgba(12,22,20,.82)'; g.fillRect(r.left * k, r.top * k, r.width * k, r.height * k); g.drawImage(rendJ.domElement, r.left * k, r.top * k, r.width * k, r.height * k); }
+  if (TOUR.ativo) {
+    const p = PASSOS[TOUR.i], bw = Math.min(760 * k, W - 32 * k), x = (W - bw) / 2, y = 16 * k;
+    g.font = `400 ${14 * k}px Manrope, sans-serif`; const ls = quebrar(g, p.txt, bw - 36 * k), bh = (54 + ls.length * 20) * k;
+    g.fillStyle = 'rgba(12,22,20,.8)'; g.beginPath(); g.roundRect(x, y, bw, bh, 16 * k); g.fill();
+    g.fillStyle = '#f4dc9c'; g.font = `800 ${20 * k}px "Bricolage Grotesque", sans-serif`; g.fillText(p.tit, x + 18 * k, y + 32 * k);
+    g.fillStyle = '#e8efe9'; g.font = `400 ${14 * k}px Manrope, sans-serif`; ls.forEach((t, i) => g.fillText(t, x + 18 * k, y + (56 + i * 20) * k));
+  }
+  g.font = `800 ${46 * k}px "Bricolage Grotesque", sans-serif`; g.fillStyle = '#f4dc9c'; g.fillText(String(ANOS[Math.round(S.t)]), 24 * k, GRAV.cv.height - 28 * k);
+  g.font = `600 ${10 * k}px Manrope, sans-serif`; g.fillStyle = 'rgba(255,255,255,.8)'; g.textAlign = 'right';
+  g.fillText(CREDITO_VIDEO, W - 10 * k, GRAV.cv.height - 10 * k); g.textAlign = 'left';
+  GRAV.faixa?.requestFrame?.();
+}
+const ARQ_VIDEO = 'LULC_BHSL_apresentacao';
+const CREDITO_VIDEO = 'Imagens © Esri, Maxar, Earthstar Geographics · Relevo: AWS Terrain Tiles (SRTM)';
+
+
 async function iniciar() {
   $('bloco-m').textContent = `${fmt(M.bloco * M.pix)} m (${M.bloco} × ${M.bloco} pixels)`;
   $('ex').value = S.ex; $('ex-v').textContent = '×' + S.ex; $('op').value = S.op; $('op-v').textContent = Math.round(S.op * 100) + '%';
@@ -621,6 +818,10 @@ async function iniciar() {
   iniciarGeral(); painelCorredor(); graficoTempo(); legenda(); painelAno();
   await estiloPronto;
   camadasMapa(); atualizarGeral(true);
+  $('tt').value = S.T; $('tt-v').textContent = '×' + S.T;
+  try { map.setSky({ 'sky-color': '#0d2a45', 'horizon-color': '#9ec3d6', 'fog-color': '#c8d6dc', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.85,
+    'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 7, 1, 11, 0.2] }); } catch (e) { console.warn('céu indisponível', e); }
+  demPronto = carregarDEM().then(e => { elevG = e; aplicarTerreno(); }).catch(err => { console.warn('DEM indisponível; terreno desligado', err); S.terreno = false; $('tg-terreno').checked = false; $('tg-terreno').disabled = true; aplicarTerreno(); });
   $('carregando').classList.add('fim');
   setTimeout(() => { if (S.janela < 0) irCorredor(); }, 600);
 }
@@ -628,6 +829,7 @@ let tAnt = null;
 const v4 = new THREE.Vector4();
 function animar(t) {
   requestAnimationFrame(animar);
+  quadroGravacao();
   const dt = tAnt == null ? 0 : Math.min(0.1, (t - tAnt) / 1000); tAnt = t;
   if (S.tocando) {
     let nt = S.t + dt / 1.3;
