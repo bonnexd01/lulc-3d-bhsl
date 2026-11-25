@@ -2,7 +2,7 @@
 
 Visualização 3D interativa (Three.js) do **uso e cobertura da terra** no Corredor Ecológico da Bacia do Rio São Lourenço (BHSL), Mato Grosso, Brasil. Os dados são do MapBiomas Coleção 11, ano a ano de 2014 a 2024. A página tem uma **linha do tempo** que anima as mudanças: o relevo da vegetação nativa afunda onde há supressão.
 
-**Página:** `https://<usuario>.github.io/lulc-3d-bhsl/`
+**Página:** https://bonnexd01.github.io/lulc-3d-bhsl/
 
 ![Visão do corredor durante a animação, com a linha do tempo em 2019](docs/preview_linha_do_tempo.jpg)
 
