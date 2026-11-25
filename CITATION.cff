@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "Se usar este visualizador ou os dados derivados, cite assim."
+title: "Corredor no tempo: uso e cobertura da terra em 3D no Corredor Ecológico da Bacia do Rio São Lourenço (MT), 2014–2024"
+abstract: >-
+  Visualizador 3D (Three.js) com linha do tempo do uso e cobertura da terra (MapBiomas Coleção 11)
+  no Corredor Ecológico da Bacia do Rio São Lourenço: vegetação nativa, supressão e regeneração, 2014–2024.
+authors:
+  - family-names: Aranha
+    given-names: David Albuquerque
+    orcid: "https://orcid.org/0009-0005-1631-1676"
+    affiliation: "Universidade Federal de Rondonópolis (UFR)"
+type: software
+license: MIT
+date-released: "2026-11-25"
+version: "1.0.0"
+keywords:
+  - land use and land cover
+  - MapBiomas
+  - deforestation
+  - Cerrado
+  - three.js

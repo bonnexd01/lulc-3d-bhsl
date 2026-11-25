@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uso da Terra 3D · BHSL</title>
+<meta name="description" content="Uso e cobertura da terra (MapBiomas Coleção 11) no Corredor Ecológico da Bacia do Rio São Lourenço (MT), 2014–2024, em 3D com linha do tempo: vegetação nativa, supressão e regeneração.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='14' width='8' height='15' fill='%231f8d49'/%3E%3Crect x='12' y='20' width='8' height='9' fill='%23edde8e'/%3E%3Crect x='21' y='24' width='8' height='5' fill='%23d7191c'/%3E%3Cpath d='M4 8h24' stroke='%23f4dc9c' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#08110f; --bg2:#122420; --panel:rgba(12,22,20,.76); --line:rgba(244,220,156,.16);
+  --tx:#e8efe9; --tx2:#9fb3aa; --acc:#f4dc9c; --acc2:#c99440; --chip:rgba(255,255,255,.05);
+  --chip-on:rgba(244,220,156,.16); --sombra:0 18px 50px rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#d5eadd; --bg2:#f1f6ef; --panel:rgba(250,252,247,.86); --line:rgba(20,60,50,.16);
+    --tx:#12201b; --tx2:#4d625a; --acc:#8a5a14; --acc2:#b07a28; --chip:rgba(10,40,30,.05);
+    --chip-on:rgba(176,122,40,.16); --sombra:0 18px 50px rgba(20,50,40,.18);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#d5eadd; --bg2:#f1f6ef; --panel:rgba(250,252,247,.86); --line:rgba(20,60,50,.16);
+  --tx:#12201b; --tx2:#4d625a; --acc:#8a5a14; --acc2:#b07a28; --chip:rgba(10,40,30,.05);
+  --chip-on:rgba(176,122,40,.16); --sombra:0 18px 50px rgba(20,50,40,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(120% 90% at 55% 35%,var(--bg2) 0%,var(--bg) 70%);color:var(--tx);
+  font:14px/1.45 Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#cena{position:fixed;inset:0}
+#cena canvas{display:block;outline:none}
+.painel{position:fixed;background:var(--panel);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  border:1px solid var(--line);border-radius:18px;box-shadow:var(--sombra);z-index:5}
+#pnl-esq{top:16px;left:16px;width:318px;max-height:calc(100vh - 32px);overflow:auto;padding:18px 18px 14px}
+#pnl-dir{top:16px;right:16px;width:310px;max-height:calc(100vh - 32px);overflow:auto;padding:16px 16px 12px}
+.kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:700}
+h1{font:800 25px/1.08 "Bricolage Grotesque",sans-serif;margin:6px 0 4px;letter-spacing:-.01em}
+h2{font:700 13px/1.2 "Bricolage Grotesque",sans-serif;margin:0 0 8px;letter-spacing:.02em;color:var(--acc)}
+.sub{margin:0 0 14px;color:var(--tx2);font-size:12.5px}
+.rot{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--tx2);font-weight:700;margin:14px 0 6px}
+.rot output{font:800 13px "Bricolage Grotesque";color:var(--tx);letter-spacing:0;text-transform:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--chip);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button,.chips button,.acoes button,#tl-play{font:inherit;color:var(--tx);background:transparent;border:0;cursor:pointer}
+.seg button{padding:8px 6px;border-radius:9px;font-weight:700}
+.seg button.on{background:var(--chip-on);color:var(--acc)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--chip);font-weight:600;font-size:13px;line-height:1.15;text-align:left}
+.chips button small{display:block;font-size:10.5px;color:var(--tx2);font-weight:500}
+.chips button.on{background:var(--chip-on);border-color:var(--acc2);color:var(--acc)}
+input[type=range]{width:100%;accent-color:var(--acc2)}
+.tg{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0;cursor:pointer}
+.tg input{accent-color:var(--acc2)}
+.janelas{display:flex;flex-direction:column;gap:6px}
+.janela{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:center;text-align:left;padding:8px 10px;border-radius:12px;
+  border:1px solid var(--line);background:var(--chip);color:var(--tx);font:inherit;cursor:pointer}
+.janela b{font:800 15px "Bricolage Grotesque";color:var(--acc);text-align:center}
+.janela span{font-size:12.5px;font-weight:600;line-height:1.25}
+.janela small{display:block;color:var(--tx2);font-weight:500;font-size:11px}
+.janela.on{border-color:var(--acc2);background:var(--chip-on)}
+.acoes{display:flex;gap:6px;margin-top:14px}
+.acoes button{flex:1;padding:7px 6px;border-radius:10px;border:1px solid var(--line);background:var(--chip);font-weight:600;font-size:12.5px}
+.acoes button:hover,.chips button:hover,.janela:hover{border-color:var(--acc2)}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px;color:var(--tx2)}
+summary{cursor:pointer;color:var(--tx);font-weight:700}
+details p{margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;color:var(--tx2);font-weight:500}
+thead th{font-size:11px;letter-spacing:.06em;color:var(--tx2);font-weight:700}
+td.neg{color:#f08a7e;font-weight:700}
+td.pos{color:#7fd6a4;font-weight:700}
+.fonte{font-size:10.5px;color:var(--tx2);margin:6px 0 14px}
+.barras{display:flex;flex-direction:column;gap:4px;font-size:11.5px;margin-bottom:4px}
+.barra{display:grid;grid-template-columns:104px 1fr 54px;gap:6px;align-items:center}
+.barra>i{display:block;height:8px;border-radius:4px}
+.barra span:last-child{text-align:right;color:var(--tx)}
+.barra span:first-child{color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
+/* linha do tempo */
+#tl{left:350px;right:342px;bottom:16px;padding:12px 16px 10px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:6px 18px}
+#tl-top{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+#tl-play{width:40px;height:40px;border-radius:50%;background:var(--acc);color:var(--bg);font-size:15px;font-weight:800;flex:none;display:grid;place-items:center}
+#tl-play:hover{filter:brightness(1.08)}
+#tl-ano{font:800 34px/1 "Bricolage Grotesque";color:var(--acc);min-width:84px;font-variant-numeric:tabular-nums}
+#tl-slider{flex:1}
+#tl-num{font-size:12px;color:var(--tx2);line-height:1.35;min-width:190px;text-align:right}
+#tl-num b{color:var(--tx);font-weight:700}
+#tl-graf svg{width:100%;height:auto;display:block;cursor:pointer}
+#tl-leg{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px;align-content:start;font-size:10.5px;line-height:1.3;color:var(--tx2)}
+#tl-leg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tl-leg .titulo{grid-column:1/-1;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:2px}
+#dica{position:fixed;z-index:8;pointer-events:none;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);
+  border-radius:12px;padding:9px 11px;font-size:12px;min-width:200px;max-width:340px;display:none;box-shadow:var(--sombra)}
+#dica h3{margin:0 0 4px;font:800 12.5px "Bricolage Grotesque";color:var(--acc)}
+#dica table{font-size:11.5px}
+#dica td,#dica th{padding:2px 3px}
+#dica ol{margin:4px 0 0;padding-left:16px}
+#rotulos{position:fixed;inset:0;pointer-events:none;z-index:4}
+.rotulo{position:absolute;left:0;top:0;white-space:nowrap;font:800 12px "Bricolage Grotesque";color:var(--bg);background:var(--acc);
+  padding:3px 8px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.rotulo.mun{background:transparent;color:var(--tx);box-shadow:none;font:700 11px Manrope;text-shadow:0 1px 3px var(--bg),0 0 6px var(--bg);opacity:.85}
+.rotulo.prod{font-size:15px;padding:4px 12px}
+.rotulo.clic{pointer-events:auto;cursor:pointer}
+#carregando{position:fixed;inset:0;display:grid;place-items:center;z-index:20;background:var(--bg);color:var(--tx2);font-weight:600;transition:opacity .4s}
+#carregando.fim{opacity:0;pointer-events:none}
+#bt-painel{display:none}
+@media (max-width:1100px) and (min-width:761px){
+  #pnl-dir{display:none;top:16px;max-height:calc(100vh - 260px)}
+  #pnl-dir.aberto{display:block}
+  #bt-painel{display:block}
+  #tl{right:16px;grid-template-columns:1fr}
+  #tl-leg{display:none}
+}
+@media (max-width:760px){
+  #pnl-esq{top:auto;bottom:8px;left:8px;right:8px;width:auto;max-height:36vh;padding:14px}
+  #pnl-dir{top:8px;left:8px;right:8px;width:auto;max-height:40vh;display:none}
+  #pnl-dir.aberto{display:block}
+  #tl{top:8px;bottom:auto;left:8px;right:8px;grid-template-columns:1fr;padding:10px 12px}
+  #tl-leg,#tl-num{display:none}
+  #tl-ano{font-size:26px;min-width:64px}
+  body.dir-aberto #tl{display:none}
+  #bt-painel{display:block}
+  h1{font-size:21px}
+}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="cena"></div>
+<div id="rotulos"></div>
+
+<section class="painel" id="pnl-esq">
+  <div class="kicker">Uso e cobertura · 2014–2024 · BHSL</div>
+  <h1>Corredor no tempo</h1>
+  <p class="sub">MapBiomas Coleção 11, 30 m · Corredor Ecológico da Bacia do Rio São Lourenço (MT)</p>
+
+  <div class="seg" id="modo">
+    <button data-modo="geral" class="on">Corredor</button>
+    <button data-modo="janela">Janela 3D</button>
+  </div>
+
+  <div class="rot">Cor</div>
+  <div class="chips" id="cor">
+    <button data-c="lulc" class="on">Uso e cobertura<small>classes MapBiomas</small></button>
+    <button data-c="mud">Mudança desde 2014<small>supressão · regeneração</small></button>
+  </div>
+
+  <div class="rot">Altura</div>
+  <div class="chips" id="alt">
+    <button data-a="nat" class="on">Vegetação nativa</button>
+    <button data-a="plano">Plano</button>
+  </div>
+
+  <div class="rot">Escala vertical <output id="ex-v"></output></div>
+  <input type="range" id="ex" min="1" max="200" step="1">
+
+  <div class="rot">Janelas de detalhe · 30 m</div>
+  <div class="janelas" id="lista-janelas"></div>
+
+  <div id="bloco-janela">
+    <label class="tg"><input type="checkbox" id="comparar"> Comparar 2014 × ano da linha do tempo</label>
+  </div>
+
+  <div style="margin-top:12px">
+    <label class="tg"><input type="checkbox" id="tg-mun" checked> Municípios</label>
+    <label class="tg"><input type="checkbox" id="tg-lim" checked> Limite do corredor</label>
+    <label class="tg"><input type="checkbox" id="tg-loop"> Repetir a animação</label>
+    <label class="tg"><input type="checkbox" id="tg-giro"> Girar a cena</label>
+  </div>
+
+  <div class="acoes">
+    <button id="bt-reset">Recentrar</button>
+    <button id="bt-png">Salvar PNG</button>
+    <button id="bt-tema">Tema</button>
+    <button id="bt-painel">Números</button>
+  </div>
+
+  <details>
+    <summary>Como ler</summary>
+    <p><b>Linha do tempo:</b> o botão ▶ anima 2014 → 2024; a régua e o gráfico também escolhem o ano. O gráfico mostra a composição do corredor (% da área) e, embaixo, a supressão (vermelho) e a regeneração (azul) de cada ano em relação ao anterior.</p>
+    <p><b>Corredor:</b> blocos de <span id="bloco-m"></span>. A altura é a fração do bloco coberta por vegetação nativa no ano (floresta, savana, campo, campo alagado, afloramento): onde há supressão, o relevo afunda. A cor é a classe dominante do bloco ou a mudança em relação a 2014.</p>
+    <p><b>Janela 3D:</b> cada pixel de 30 m é um bloco. Vegetação nativa aparece elevada e usos antrópicos ficam rentes ao chão; a altura é só um marcador, não a altura da vegetação.</p>
+    <p><b>Mudança desde 2014:</b> supressão = nativa em 2014 e uso antrópico no ano; regeneração = uso antrópico em 2014 e nativa no ano (mesmos grupos do script de transições do artigo).</p>
+    <p>Arraste para girar, role para aproximar, botão direito para deslocar. Passe o cursor sobre a cena para ler os valores; na janela, a dica mostra a trajetória do pixel ano a ano.</p>
+    <p>Visual inspirado em <i>lidar-mangrove-canopy</i> (linaq11).</p>
+  </details>
+</section>
+
+<aside class="painel" id="pnl-dir">
+  <h2>Vegetação nativa · 2014 → 2024</h2>
+  <table id="tb-corredor"></table>
+  <h2 style="margin-top:14px">Para onde foi a vegetação suprimida</h2>
+  <div class="barras" id="destino"></div>
+  <p class="fonte">Matriz de transição 2014 → 2024 (nativa → uso antrópico).</p>
+  <h2>Supressão por município (ha)</h2>
+  <div class="barras" id="municipios"></div>
+  <p class="fonte" id="compart"></p>
+  <p class="fonte">Fonte: data/ (BHSL_MapBiomas11_stats, BHSL_trans_*, BHSL_supressao_*), MapBiomas Coleção 11.</p>
+  <div id="st-janela"></div>
+</aside>
+
+<section class="painel" id="tl">
+  <div id="tl-top">
+    <button id="tl-play" title="Animar 2014 → 2024" aria-label="Animar">▶</button>
+    <div id="tl-ano">2014</div>
+    <input type="range" id="tl-slider" min="0" max="10" step="0.01" value="0" aria-label="Ano">
+    <div id="tl-num"></div>
+  </div>
+  <div id="tl-graf"></div>
+  <div id="tl-leg"></div>
+</section>
+
+<div id="dica"></div>
+<div id="carregando">Descompactando 11 anos de uso e cobertura…</div>
+
+<script>window.DADOS = /*__DADOS__*/null;</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const D = window.DADOS, M = D.meta, ANOS = M.anos, NA = ANOS.length, ND = 0;
+const CL = D.classes;                                     // [codigo, nome, cor, nativa]
+const COR = CL.map(c => new THREE.Color(c[2]));           // índice i -> classe i+1
+const NATIVA = CL.map(c => c[3]);
+const VERDE = new THREE.Color('#2f8f57'), BEGE = new THREE.Color('#d9cfa3'), VERM = new THREE.Color('#d7191c'), AZUL = new THREE.Color('#4fb3e8'), AGUA = new THREE.Color('#2532e4');
+const CODIGO_AGUA = new Set([26, 33]);
+const H_NAT = 100;           // m de relevo para 100% de nativa no bloco (antes da escala vertical)
+const H_VOX = 30;            // m do marcador de nativa na janela
+
+const S = { modo: 'geral', t: 0, tocando: false, cor: 'lulc', alt: 'nat', ex: { geral: 15, janela: 4 },
+            janela: 0, comparar: false, mun: true, lim: true, loop: false };
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+async function dz(b64) {
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const s = new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const descarta = g => g.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => m.dispose()); });
+const xy = (col, lin) => [(col - M.W / 2) * M.pix, (M.H / 2 - lin) * M.pix];
+const nomeClasse = i => i ? CL[i - 1][1] : 'fora do corredor';
+const anoDe = t => ANOS[Math.round(t)];
+
+// ---------- cena ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+$('cena').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 10, 3e6);
+camera.up.set(0, 0, 1);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.zoomToCursor = true;
+controls.maxPolarAngle = Math.PI * 0.49; controls.autoRotateSpeed = 0.6;
+const hemi = new THREE.HemisphereLight(0xeef6ee, 0x2a2418, 1.25); hemi.position.set(0, 0, 1); scene.add(hemi);
+const sol = new THREE.DirectionalLight(0xfff0d8, 1.9); sol.position.set(-1, 1, 1); scene.add(sol);
+const gGeral = new THREE.Group(), escGeral = new THREE.Group(), gJanela = new THREE.Group();
+gGeral.add(escGeral); scene.add(gGeral, gJanela);
+
+// ---------- dados ----------
+const G = { anos: [] };
+const cacheJ = {};
+async function dadosJanela(w) {
+  if (!cacheJ[w]) cacheJ[w] = await dz(D.janelas[w].cls);
+  return cacheJ[w];
+}
+
+// ---------- visão geral ----------
+let geoG, limG = [], munG = [];
+function iniciarGeral() {
+  const { Wb, Hb, bloco: B } = M, n = Wb * Hb, pos = new Float32Array(n * 3);
+  for (let i = 0; i < Hb; i++) for (let j = 0; j < Wb; j++) {
+    const k = i * Wb + j, [x, y] = xy((j + 0.5) * B, (i + 0.5) * B); pos[3 * k] = x; pos[3 * k + 1] = y;
+  }
+  geoG = new THREE.BufferGeometry();
+  geoG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geoG.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  const idx = [], dt = G.dentro;
+  for (let i = 0; i < Hb - 1; i++) for (let j = 0; j < Wb - 1; j++) {
+    const a = i * Wb + j, b = a + 1, c = a + Wb, d = c + 1;
+    if (dt[a] && dt[b] && dt[c] && dt[d]) idx.push(a, c, b, b, c, d);
+  }
+  geoG.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
+  escGeral.add(new THREE.Mesh(geoG, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  for (const anel of D.limite) {
+    const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(anel.map(([c, l]) => new THREE.Vector3(...xy(c, l), 0))),
+      new THREE.LineBasicMaterial({ color: 0xf4dc9c, transparent: true, opacity: 0.9, depthTest: false }));
+    ln.renderOrder = 10; limG.push(ln); gGeral.add(ln);
+  }
+  for (const m of D.municipios) for (const anel of m.linhas) {
+    const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(anel.map(([c, l]) => new THREE.Vector3(...xy(c, l), 0))),
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthTest: false }));
+    ln.renderOrder = 9; munG.push(ln); gGeral.add(ln);
+  }
+  D.janelas.forEach(jd => {
+    const { c0, r0, n } = jd;
+    const lp = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[c0, r0], [c0 + n, r0], [c0 + n, r0 + n], [c0, r0 + n]].map(([c, l]) => new THREE.Vector3(...xy(c, l), 0))),
+      new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false }));
+    lp.renderOrder = 11; gGeral.add(lp);
+  });
+}
+const cT = new THREE.Color(), cU = new THREE.Color();
+function corBlocoAno(k, a, c) {
+  const A = G.anos[a];
+  if (S.cor === 'lulc') { const v = A.dom[k]; return v ? c.copy(COR[v - 1]) : c.setRGB(0.2, 0.2, 0.2); }
+  const nat = A.nat[k] / 250, sup = A.sup[k] / 250, reg = A.reg[k] / 250;
+  c.copy(BEGE).lerp(VERDE, clamp(nat - reg, 0, 1));
+  if (sup > 0) c.lerp(VERM, Math.min(1, 0.3 + sup * 4));
+  if (reg > 0) c.lerp(AZUL, Math.min(1, 0.3 + reg * 4));
+  return c;
+}
+let normaisEm = -1;
+function atualizarGeral(normais) {
+  const n = M.Wb * M.Hb, k0 = Math.floor(S.t), k1 = Math.min(k0 + 1, NA - 1), f = S.t - k0;
+  const N0 = G.anos[k0].nat, N1 = G.anos[k1].nat, plano = S.alt === 'plano';
+  const pos = geoG.attributes.position.array, col = geoG.attributes.color.array;
+  for (let k = 0; k < n; k++) {
+    pos[3 * k + 2] = plano ? 0 : (N0[k] + (N1[k] - N0[k]) * f) / 250 * H_NAT;
+    corBlocoAno(k, k0, cT);
+    if (f > 0) { corBlocoAno(k, k1, cU); cT.lerp(cU, f); }
+    col[3 * k] = cT.r; col[3 * k + 1] = cT.g; col[3 * k + 2] = cT.b;
+  }
+  geoG.attributes.position.needsUpdate = true; geoG.attributes.color.needsUpdate = true;
+  if (normais || normaisEm < 0) { geoG.computeVertexNormals(); normaisEm = S.t; }
+  geoG.computeBoundingSphere();
+  escGeral.scale.z = S.ex.geral;
+}
+function pickGeral(ray) {
+  const o = ray.origin, d = ray.direction; if (d.z >= 0) return null;
+  const a = Math.round(S.t), N = G.anos[a].nat, ex = S.ex.geral, plano = S.alt === 'plano';
+  const t0 = Math.max(0, (o.z - H_NAT * ex) / -d.z), t1 = (o.z + 3) / -d.z, passos = 600, p = new THREE.Vector3();
+  for (let s = 0; s <= passos; s++) {
+    p.copy(d).multiplyScalar(t0 + (t1 - t0) * s / passos).add(o);
+    const j = Math.floor((p.x / M.pix + M.W / 2) / M.bloco), i = Math.floor((M.H / 2 - p.y / M.pix) / M.bloco);
+    if (i < 0 || j < 0 || i >= M.Hb || j >= M.Wb) continue;
+    const k = i * M.Wb + j; if (!G.dentro[k]) continue;
+    if (p.z <= (plano ? 0 : N[k] / 250 * H_NAT * ex) + 1) return k;
+  }
+  return null;
+}
+
+// ---------- janela 3D ----------
+const geoCubo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0, 0.5);
+let infoJanela = null;
+function voxels(n, ox) {
+  const J = infoJanela.J, nn = n * n, cel = [];
+  for (let k = 0; k < nn; k++) if (J[k]) cel.push(k);            // banda 2014 dentro do corredor
+  const im = new THREE.InstancedMesh(geoCubo, new THREE.MeshLambertMaterial({ color: 0xffffff }), cel.length);
+  im.userData = { cel, ox };
+  return im;
+}
+function alturaVox(i) { if (!i) return 0; const c = CL[i - 1]; return NATIVA[i - 1] ? H_VOX : CODIGO_AGUA.has(c[0]) ? 0.6 : 2.5; }
+function corVox(i, i0, c) {
+  if (S.cor === 'lulc') return c.copy(COR[i - 1]);
+  const n0 = NATIVA[i0 - 1], n1 = NATIVA[i - 1];
+  if (CODIGO_AGUA.has(CL[i - 1][0])) return c.copy(AGUA);
+  if (n0 && n1) return c.copy(VERDE);
+  if (n0 && !n1) return c.copy(VERM);
+  if (!n0 && n1) return c.copy(AZUL);
+  return c.copy(BEGE);
+}
+const mtx = new THREE.Matrix4();
+function atualizarVoxels(im, tt) {
+  const { cel, ox } = im.userData, J = infoJanela.J, n = infoJanela.jd.n, nn = n * n;
+  const k0 = Math.floor(tt), k1 = Math.min(k0 + 1, NA - 1), f = tt - k0, plano = S.alt === 'plano';
+  for (let q = 0; q < cel.length; q++) {
+    const k = cel[q], i = Math.floor(k / n), j = k % n;
+    const a = J[k0 * nn + k], b = J[k1 * nn + k], i0 = J[k];
+    const h = plano ? 2 : alturaVox(a) + (alturaVox(b) - alturaVox(a)) * f;
+    mtx.makeScale(M.pix, M.pix, Math.max(h, 0.3)).setPosition(ox + (j - n / 2 + 0.5) * M.pix, (n / 2 - i - 0.5) * M.pix, 0);
+    im.setMatrixAt(q, mtx);
+    corVox(a, i0, cT); if (f > 0 && b !== a) { corVox(b, i0, cU); cT.lerp(cU, f); }
+    im.setColorAt(q, cT);
+  }
+  im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+}
+async function construirJanela() {
+  descarta(gJanela); gJanela.clear(); limparRotulos();
+  const w = S.janela, jd = D.janelas[w], J = await dadosJanela(w), n = jd.n, wx = n * M.pix, passo = wx * 1.18;
+  infoJanela = { jd, J, passo, ims: [] };
+  const esc = new THREE.Group(); esc.scale.z = S.ex.janela; gJanela.add(esc); gJanela.userData.esc = esc;
+  const lados = S.comparar ? ['2014', 'ano'] : ['ano'];
+  lados.forEach((lado, ia) => {
+    const ox = S.comparar ? (ia - 0.5) * passo : 0;
+    const placa = new THREE.Mesh(new THREE.PlaneGeometry(wx, wx), new THREE.MeshBasicMaterial({ color: 0x1a2622 }));
+    placa.position.set(ox, 0, -0.5); gJanela.add(placa);
+    gJanela.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => new THREE.Vector3(ox + a * wx / 2, b * wx / 2, 0))),
+      new THREE.LineBasicMaterial({ color: 0xf4dc9c, transparent: true, opacity: 0.6 })));
+    const im = voxels(n, ox); im.userData.lado = lado; esc.add(im); infoJanela.ims.push(im);
+    atualizarVoxels(im, lado === '2014' ? 0 : S.t);
+    if (S.comparar) { const el = addRotulo(lado === '2014' ? '2014' : String(anoDe(S.t)), new THREE.Vector3(ox, wx / 2 + 150, 0), 'prod'); if (lado === 'ano') infoJanela.rotAno = el; }
+  });
+  statsJanela();
+}
+
+// ---------- rótulos ----------
+const camadaRot = $('rotulos'); let rotulos = [];
+function addRotulo(html, v, cls = '', clique) {
+  const el = document.createElement('div'); el.className = 'rotulo ' + cls; el.innerHTML = html;
+  if (clique) { el.classList.add('clic'); el.addEventListener('click', clique); }
+  camadaRot.appendChild(el); rotulos.push({ el, v }); return el;
+}
+function limparRotulos() { rotulos.forEach(r => r.el.remove()); rotulos = []; }
+const vtmp = new THREE.Vector3();
+function moverRotulos() {
+  for (const r of rotulos) {
+    if (r.el.classList.contains('mun') && !S.mun) { r.el.style.display = 'none'; continue; }
+    vtmp.copy(r.v).project(camera);
+    if (vtmp.z > 1) { r.el.style.display = 'none'; continue; }
+    r.el.style.display = '';
+    r.el.style.transform = `translate(${(vtmp.x * .5 + .5) * innerWidth}px,${(-vtmp.y * .5 + .5) * innerHeight}px) translate(-50%,-120%)`;
+  }
+}
+
+// ---------- painéis ----------
+function painelCorredor() {
+  const N = D.numeros, n0 = N.nativa_ano[0], n1 = N.nativa_ano[NA - 1], area = Object.values(N.serie).reduce((s, v) => s + v[0], 0);
+  $('tb-corredor').innerHTML = `<thead><tr><th></th><th>2014</th><th>2024</th><th>Δ</th></tr></thead><tbody>
+    <tr><td>Nativa (ha)</td><td>${fmt(n0)}</td><td>${fmt(n1)}</td><td class="neg">${fmt(100 * (n1 - n0) / n0, 1)}%</td></tr>
+    <tr><td>% do corredor</td><td>${fmt(100 * n0 / area, 1)}</td><td>${fmt(100 * n1 / area, 1)}</td><td class="neg">${fmt(100 * (n1 - n0) / area, 1)} p.p.</td></tr>
+    <tr><td>Supressão 2014→2024</td><td colspan="2"></td><td class="neg">${fmt(N.sup_total)} ha</td></tr>
+    <tr><td>Regeneração 2014→2024</td><td colspan="2"></td><td class="pos">${fmt(N.reg_total)} ha</td></tr></tbody>`;
+  const mx = N.destino[0][1];
+  $('destino').innerHTML = N.destino.map(([c, ha, p]) => { const cl = CL.find(x => x[0] === c);
+    return `<div class="barra"><span title="${cl[1]}"><i class="sw" style="background:${cl[2]}"></i>${cl[1]}</span><i style="width:${Math.max(2, 100 * ha / mx)}%;background:${cl[2]}"></i><span>${fmt(p, 1)}%</span></div>`; }).join('');
+  const mm = N.municipios[0][1];
+  $('municipios').innerHTML = N.municipios.map(([nome, s]) => `<div class="barra"><span title="${nome}">${nome}</span><i style="width:${Math.max(2, 100 * s / mm)}%;background:#d7191c"></i><span>${fmt(s)}</span></div>`).join('');
+  const cp = N.compartimento;
+  $('compart').textContent = `Compartimento (SRTM, cota de 400 m): planície ${fmt(cp['Planície'][0])} ha suprimidos; planalto ${fmt(cp['Planalto'][0])} ha.`;
+}
+function painelAno() {
+  const N = D.numeros, a = Math.round(S.t), y = ANOS[a];
+  $('tl-ano').textContent = y;
+  const dn = N.nativa_ano[a] - N.nativa_ano[0];
+  let h = `Nativa em ${y}: <b>${fmt(N.nativa_ano[a])} ha</b>`;
+  if (a > 0) h += `<br>líquido desde 2014: <b style="color:#f08a7e">${fmt(dn)} ha</b><br>${ANOS[a - 1]}→${y}: supressão <b style="color:#f08a7e">${fmt(N.sup_ano[a - 1])}</b> · regeneração <b style="color:#7fd6a4">${fmt(N.reg_ano[a - 1])}</b> ha`;
+  else h += '<br>ano de referência';
+  $('tl-num').innerHTML = h;
+  const cur = $('tl-cursor'); if (cur) { const x = xGraf(S.t); cur.setAttribute('x1', x); cur.setAttribute('x2', x); }
+  if (infoJanela?.rotAno) infoJanela.rotAno.textContent = y;
+}
+// gráfico da linha do tempo: áreas empilhadas (% do corredor) + barras de supressão/regeneração
+const GW = 620, GH = 150, GA = 96, GL = 34, GR = 10;
+const xGraf = t => GL + t * (GW - GL - GR) / (NA - 1);
+function graficoTempo() {
+  const N = D.numeros, grupos = D.grupos, tot = ANOS.map((_, a) => grupos.reduce((s, [g]) => s + N.serie[g][a], 0));
+  let acc = ANOS.map(() => 0), areas = '';
+  const yA = p => 6 + (1 - p) * (GA - 6);
+  for (const [g, cor] of grupos) {
+    const lo = acc.slice(), hi = acc.map((v, a) => v + N.serie[g][a] / tot[a]);
+    const pts = ANOS.map((_, a) => `${xGraf(a).toFixed(1)},${yA(hi[a]).toFixed(1)}`).concat(ANOS.map((_, a) => `${xGraf(NA - 1 - a).toFixed(1)},${yA(lo[NA - 1 - a]).toFixed(1)}`));
+    areas += `<polygon points="${pts.join(' ')}" fill="${cor}" stroke="rgba(0,0,0,.25)" stroke-width=".5"><title>${g}</title></polygon>`;
+    acc = hi;
+  }
+  const mxB = Math.max(...N.sup_ano, ...N.reg_ano), base = GA + 10, hb = GH - base - 14, bw = (GW - GL - GR) / (NA - 1) * 0.34;
+  let barras = '';
+  N.sup_ano.forEach((v, i) => {
+    const x = xGraf(i + 1), hs = hb * v / mxB, hr = hb * N.reg_ano[i] / mxB;
+    barras += `<rect x="${(x - bw - 1).toFixed(1)}" y="${(base + hb - hs).toFixed(1)}" width="${bw.toFixed(1)}" height="${hs.toFixed(1)}" fill="#d7191c"><title>supressão ${ANOS[i]}→${ANOS[i + 1]}: ${fmt(v)} ha</title></rect>`;
+    barras += `<rect x="${(x + 1).toFixed(1)}" y="${(base + hb - hr).toFixed(1)}" width="${bw.toFixed(1)}" height="${hr.toFixed(1)}" fill="#4fb3e8"><title>regeneração ${ANOS[i]}→${ANOS[i + 1]}: ${fmt(N.reg_ano[i])} ha</title></rect>`;
+  });
+  const eixo = ANOS.map((y, a) => `<text x="${xGraf(a).toFixed(1)}" y="${GH - 2}" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".6">${String(y).slice(2)}</text>`).join('');
+  const grade = [0, 0.5, 1].map(p => `<text x="${GL - 4}" y="${yA(p) + 3}" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".6">${p * 100}%</text>`).join('');
+  $('tl-graf').innerHTML = `<svg id="tl-svg" viewBox="0 0 ${GW} ${GH}" style="color:var(--tx)">${areas}${grade}
+    <text x="${GL - 4}" y="${base + hb}" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".6">${fmt(mxB / 1000, 1)} mil ha</text>
+    <line x1="${GL}" x2="${GW - GR}" y1="${base + hb}" y2="${base + hb}" stroke="currentColor" stroke-opacity=".2"/>${barras}${eixo}
+    <rect x="${GW - GR - 196}" y="${base - 1}" width="8" height="8" fill="#d7191c"/><text x="${GW - GR - 185}" y="${base + 6}" font-size="9" fill="currentColor" fill-opacity=".75">supressão no ano</text>
+    <rect x="${GW - GR - 100}" y="${base - 1}" width="8" height="8" fill="#4fb3e8"/><text x="${GW - GR - 89}" y="${base + 6}" font-size="9" fill="currentColor" fill-opacity=".75">regeneração no ano</text>
+    <line id="tl-cursor" x1="${GL}" x2="${GL}" y1="2" y2="${GH - 12}" stroke="var(--acc)" stroke-width="2"/></svg>`;
+  $('tl-svg').addEventListener('click', e => {
+    const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * GW;
+    pausar(); irPara(clamp(Math.round((x - GL) / (GW - GL - GR) * (NA - 1)), 0, NA - 1));
+  });
+}
+function legenda() {
+  const sw = (cor, txt) => `<span><i class="sw" style="background:${cor}"></i>${txt}</span>`;
+  let h = `<div class="titulo">${S.cor === 'lulc' ? (S.modo === 'geral' ? 'Classe dominante do bloco' : 'Classe do pixel') : 'Mudança em relação a 2014'}</div>`;
+  if (S.cor === 'lulc') h += CL.filter(c => c[0] !== 7 && c[0] !== 31).map(c => sw(c[2], c[1])).join('');
+  else h += sw('#2f8f57', 'nativa mantida') + sw('#d9cfa3', 'uso antrópico mantido') + sw('#d7191c', 'supressão') + sw('#4fb3e8', 'regeneração') + (S.modo === 'janela' ? sw('#2532e4', 'água') : '');
+  $('tl-leg').innerHTML = h;
+}
+function statsJanela() {
+  const box = $('st-janela');
+  if (S.modo !== 'janela' || !infoJanela) { box.innerHTML = ''; return; }
+  const { jd, J } = infoJanela, nn = jd.n * jd.n, ha = M.pix * M.pix / 1e4, a = Math.round(S.t);
+  const natA = b => { let s = 0; for (let k = 0; k < nn; k++) { const v = J[b * nn + k]; if (v && NATIVA[v - 1]) s++; } return s * ha; };
+  box.innerHTML = `<h2>Janela ${S.janela + 1} · ${jd.nome}</h2>
+    <table><thead><tr><th>nesta janela (ha)</th><th>2014</th><th>${ANOS[a]}</th></tr></thead><tbody>
+    <tr><td>Vegetação nativa</td><td>${fmt(natA(0))}</td><td>${fmt(natA(a))}</td></tr></tbody></table>
+    <p class="fonte">2014 → 2024: supressão ${fmt(jd.sup_ha, 1)} ha · regeneração ${fmt(jd.reg_ha, 1)} ha. ${fmt(nn * ha)} ha no total.</p>`;
+}
+
+// ---------- tempo ----------
+let ultimoT = null;
+function irPara(t, normais = true) {
+  S.t = clamp(t, 0, NA - 1); $('tl-slider').value = S.t;
+  if (S.modo === 'geral') atualizarGeral(normais);
+  else if (infoJanela) infoJanela.ims.forEach(im => { if (im.userData.lado !== '2014') atualizarVoxels(im, S.t); });
+  painelAno();
+  if (Math.round(S.t) !== Math.round(ultimoT ?? -1)) statsJanela();
+  ultimoT = S.t;
+}
+function tocar() {
+  if (S.t >= NA - 1) irPara(0);
+  S.tocando = true; $('tl-play').textContent = '❚❚'; $('tl-play').setAttribute('aria-label', 'Pausar');
+}
+function pausar() {
+  S.tocando = false; $('tl-play').textContent = '▶'; $('tl-play').setAttribute('aria-label', 'Animar');
+  if (S.modo === 'geral') atualizarGeral(true);
+}
+$('tl-play').addEventListener('click', () => S.tocando ? pausar() : tocar());
+$('tl-slider').addEventListener('input', e => { pausar(); irPara(+e.target.value, false); });
+$('tl-slider').addEventListener('change', e => irPara(Math.round(+e.target.value)));
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+  if (e.code === 'Space') { e.preventDefault(); S.tocando ? pausar() : tocar(); }
+  if (e.key === 'ArrowRight') { pausar(); irPara(Math.floor(S.t) + 1); }
+  if (e.key === 'ArrowLeft') { pausar(); irPara(Math.ceil(S.t) - 1); }
+});
+
+// ---------- dica ----------
+const dica = $('dica'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let mouseXY = null, ultimaPick = 0, sujo = false;
+renderer.domElement.addEventListener('pointermove', e => { mouseXY = [e.clientX, e.clientY]; sujo = true; });
+renderer.domElement.addEventListener('pointerleave', () => { mouseXY = null; dica.style.display = 'none'; });
+function mostrarDica(html) {
+  dica.innerHTML = html; dica.style.display = 'block';
+  const [x, y] = mouseXY, w = dica.offsetWidth, h = dica.offsetHeight;
+  dica.style.left = Math.min(x + 16, innerWidth - w - 8) + 'px'; dica.style.top = Math.min(y + 16, innerHeight - h - 8) + 'px';
+}
+function pick() {
+  if (!mouseXY) return;
+  mouse.set(mouseXY[0] / innerWidth * 2 - 1, -mouseXY[1] / innerHeight * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const a = Math.round(S.t), y = ANOS[a];
+  if (S.modo === 'geral') {
+    const k = pickGeral(ray.ray); if (k == null) { dica.style.display = 'none'; return; }
+    const A = G.anos[a], p = v => fmt(100 * v / 250, 1) + '%';
+    mostrarDica(`<h3>Bloco de ${fmt(M.bloco * M.pix)} m · ${y}</h3><table><tbody>
+      <tr><td>Classe dominante</td><td>${nomeClasse(A.dom[k])}</td></tr>
+      <tr><td>Vegetação nativa</td><td>${p(A.nat[k])}</td></tr>
+      <tr><td>Nativa em 2014</td><td>${p(G.anos[0].nat[k])}</td></tr>
+      <tr><td>Suprimida desde 2014</td><td>${p(A.sup[k])}</td></tr>
+      <tr><td>Regenerada desde 2014</td><td>${p(A.reg[k])}</td></tr></tbody></table>`);
+    return;
+  }
+  if (!infoJanela) return;
+  const pt = new THREE.Vector3();
+  if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), pt)) { dica.style.display = 'none'; return; }
+  const { jd, J, passo } = infoJanela, n = jd.n, nn = n * n;
+  const ia = S.comparar ? (pt.x < 0 ? 0 : 1) : 0, ox = S.comparar ? (ia - 0.5) * passo : 0;
+  const j = Math.floor((pt.x - ox) / M.pix + n / 2), i = Math.floor(n / 2 - pt.y / M.pix);
+  if (i < 0 || j < 0 || i >= n || j >= n) { dica.style.display = 'none'; return; }
+  const k = i * n + j; if (!J[k]) { dica.style.display = 'none'; return; }
+  // trajetória em trechos contínuos
+  const tr = []; for (let b = 0; b < NA; b++) { const v = J[b * nn + k]; if (tr.length && tr[tr.length - 1].v === v) tr[tr.length - 1].f = b; else tr.push({ v, i: b, f: b }); }
+  const anoMostrado = S.comparar && ia === 0 ? 0 : a;
+  mostrarDica(`<h3>Pixel de 30 m · ${ANOS[anoMostrado]}: ${nomeClasse(J[anoMostrado * nn + k])}</h3>
+    <div style="font-size:11px;color:var(--tx2)">Trajetória 2014–2024</div><ol>${tr.map(s => `<li><i class="sw" style="background:${CL[s.v - 1][2]}"></i>${CL[s.v - 1][1]} <span style="color:var(--tx2)">(${ANOS[s.i]}${s.f > s.i ? '–' + ANOS[s.f] : ''})</span></li>`).join('')}</ol>`);
+}
+
+// ---------- câmera e modos ----------
+function enquadrar() {
+  if (S.modo === 'geral') {
+    const L = M.W * M.pix;
+    camera.near = 50; camera.far = 3e6; controls.minDistance = 2000; controls.maxDistance = 6e5;
+    controls.target.set(0, 0.02 * L, 0); camera.position.set(-0.15 * L, -0.9 * L, 0.62 * L);
+  } else {
+    const wx = D.janelas[S.janela].n * M.pix, L = S.comparar ? 2.3 * wx : wx;
+    camera.near = 1; camera.far = 2e5; controls.minDistance = 30; controls.maxDistance = 6 * L;
+    controls.target.set(0, 0.06 * L, 0); camera.position.set(-0.3 * L, -0.95 * L, 0.65 * L);
+  }
+  camera.updateProjectionMatrix(); controls.update();
+}
+function rotulosGeral() {
+  limparRotulos();
+  D.municipios.forEach(m => addRotulo(m.nome, new THREE.Vector3(...xy(m.rot[0], m.rot[1]), 0), 'mun'));
+  D.janelas.forEach((jd, w) => addRotulo(String(w + 1), new THREE.Vector3(...xy(jd.c0 + jd.n / 2, jd.r0), 0), '', () => irJanela(w)));
+}
+async function aplicarModo() {
+  const g = S.modo === 'geral';
+  gGeral.visible = g; gJanela.visible = !g;
+  document.querySelectorAll('#modo button').forEach(b => b.classList.toggle('on', b.dataset.modo === S.modo));
+  $('bloco-janela').style.display = g ? 'none' : '';
+  const ex = $('ex'); ex.max = g ? 200 : 12; ex.step = g ? 1 : 0.5; ex.value = S.ex[S.modo]; $('ex-v').textContent = '×' + S.ex[S.modo];
+  document.querySelectorAll('.janela').forEach((b, w) => b.classList.toggle('on', !g && w === S.janela));
+  if (g) { infoJanela = null; rotulosGeral(); atualizarGeral(true); statsJanela(); }
+  else await construirJanela();
+  painelAno(); legenda(); enquadrar();
+}
+async function irJanela(w) { S.janela = w; S.modo = 'janela'; await aplicarModo(); }
+async function redesenhar() { if (S.modo === 'geral') atualizarGeral(true); else await construirJanela(); painelAno(); legenda(); }
+function marcar(id, attr, v) { $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset[attr] === v)); }
+function chips(id, attr, chave) {
+  $(id).addEventListener('click', async e => { const b = e.target.closest('button'); if (!b) return; S[chave] = b.dataset[attr]; marcar(id, attr, S[chave]); await redesenhar(); });
+}
+chips('cor', 'c', 'cor'); chips('alt', 'a', 'alt');
+$('modo').addEventListener('click', async e => { const b = e.target.closest('button'); if (!b || b.dataset.modo === S.modo) return; S.modo = b.dataset.modo; await aplicarModo(); });
+$('ex').addEventListener('input', e => {
+  const v = +e.target.value; S.ex[S.modo] = v; $('ex-v').textContent = '×' + v;
+  if (S.modo === 'geral') escGeral.scale.z = v; else if (gJanela.userData.esc) gJanela.userData.esc.scale.z = v;
+});
+$('comparar').addEventListener('change', async e => { S.comparar = e.target.checked; await construirJanela(); painelAno(); enquadrar(); });
+$('tg-mun').addEventListener('change', e => { S.mun = e.target.checked; munG.forEach(l => l.visible = S.mun); });
+$('tg-lim').addEventListener('change', e => { S.lim = e.target.checked; limG.forEach(l => l.visible = S.lim); });
+$('tg-loop').addEventListener('change', e => { S.loop = e.target.checked; });
+$('tg-giro').addEventListener('change', e => { controls.autoRotate = e.target.checked; });
+$('bt-reset').addEventListener('click', enquadrar);
+$('bt-png').addEventListener('click', () => {
+  renderer.setClearColor(new THREE.Color(css('--bg')), 1); renderer.render(scene, camera);
+  const a = document.createElement('a');
+  a.download = `LULC_3D_${S.modo === 'geral' ? 'corredor' : 'janela' + (S.janela + 1)}_${ANOS[Math.round(S.t)]}_${S.cor}.png`;
+  a.href = renderer.domElement.toDataURL('image/png'); a.click(); renderer.setClearColor(0x000000, 0);
+});
+$('bt-tema').addEventListener('click', () => {
+  document.documentElement.dataset.theme = css('--bg') === '#08110f' ? 'light' : 'dark';
+  try { localStorage.setItem('lulc3d-tema', document.documentElement.dataset.theme); } catch (e) {}
+});
+$('bt-painel').addEventListener('click', () => { $('pnl-dir').classList.toggle('aberto'); document.body.classList.toggle('dir-aberto'); });
+try { const t = localStorage.getItem('lulc3d-tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+async function iniciar() {
+  $('bloco-m').textContent = `${fmt(M.bloco * M.pix)} m (${M.bloco} × ${M.bloco} pixels)`;
+  G.dentro = await dz(D.geral.dentro);
+  for (const A of D.geral.anos) G.anos.push({ dom: await dz(A.dom), nat: await dz(A.nat), sup: await dz(A.sup), reg: await dz(A.reg) });
+  $('lista-janelas').innerHTML = D.janelas.map((jd, w) =>
+    `<button class="janela" data-w="${w}"><b>${w + 1}</b><span>${jd.nome}<small>2014→2024: supressão ${fmt(jd.sup_ha)} ha · regeneração ${fmt(jd.reg_ha)} ha</small></span></button>`).join('');
+  $('lista-janelas').addEventListener('click', e => { const b = e.target.closest('.janela'); if (b) irJanela(+b.dataset.w); });
+  iniciarGeral(); painelCorredor(); graficoTempo();
+  await aplicarModo();
+  $('carregando').classList.add('fim');
+}
+let tAnt = null;
+function animar(t) {
+  requestAnimationFrame(animar);
+  const dt = tAnt == null ? 0 : Math.min(0.1, (t - tAnt) / 1000); tAnt = t;
+  if (S.tocando) {
+    let nt = S.t + dt / 1.3;                       // ~1,3 s por ano
+    if (nt >= NA - 1) { if (S.loop) nt = 0; else { nt = NA - 1; irPara(nt); pausar(); } }
+    if (S.tocando) irPara(nt, Math.abs(nt - Math.round(nt)) < 0.02);
+  }
+  controls.update();
+  if (sujo && t - ultimaPick > 80) { ultimaPick = t; sujo = false; pick(); }
+  renderer.render(scene, camera); moverRotulos();
+}
+controls.addEventListener('change', () => { if (mouseXY) sujo = true; });
+iniciar().then(() => requestAnimationFrame(animar)).catch(err => { $('carregando').textContent = 'Erro ao carregar: ' + err.message; console.error(err); });
+</script>
+</body>
+</html>
