@@ -146,6 +146,9 @@ body.tour.inset-aberto #tl-graf,body.tour.inset-aberto #tl-leg,body.tour.inset-a
   #inset{width:min(460px,calc(100vw - 366px))}
 }
 @media (max-width:760px){
+  #ins-tit small{display:none}
+  .ins-bt{padding:3px 7px;font-size:11px}
+  #ins-cab{gap:5px;flex-wrap:wrap}
   #pnl-esq{top:auto;bottom:8px;left:8px;right:8px;width:auto;max-height:36vh;padding:14px}
   #pnl-dir{top:8px;left:8px;right:8px;width:auto;max-height:40vh;display:none}
   #pnl-dir.aberto{display:block}
@@ -340,6 +343,17 @@ const map = new maplibregl.Map({
       { id: 'relevo', type: 'hillshade', source: 'demhs', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#0a1410', 'hillshade-highlight-color': '#fff6de', 'hillshade-accent-color': '#2a2a1a' } }] },
 });
 window.__mapa = map;
+// margens do enquadramento proporcionais à tela: margens fixas de desktop (360 + 340 px) tornam o enquadramento impossível no celular
+function folga(p) {
+  const W = map.getCanvas().clientWidth || innerWidth, H = map.getCanvas().clientHeight || innerHeight, cel = innerWidth <= 760;
+  if (cel) {   // celular: painel de controles embaixo; janela 3D (e, no uso da terra, a linha do tempo) em cima
+    const tl = !!document.getElementById('tl'), janela = document.body.classList.contains('inset-aberto'), tour = document.body.classList.contains('tour');
+    p = { left: 16, right: 16, top: tl ? 190 : (janela ? H * 0.47 : (tour ? 170 : 20)), bottom: tour ? 20 : (tl && janela ? H * 0.72 : H * 0.42) };
+  }
+  else if (innerWidth <= 1100) p = { ...p, right: Math.min(p.right, 40) };
+  const sx = Math.min(1, 0.75 * W / (p.left + p.right)), sy = Math.min(1, 0.8 * H / (p.top + p.bottom));
+  return { top: p.top * sy, bottom: p.bottom * sy, left: p.left * sx, right: p.right * sx };
+}
 const estiloPronto = new Promise(r => {
   const iv = setInterval(() => { if (map.style && map.style._loaded) { clearInterval(iv); r(); } }, 100);
   map.once('load', () => { clearInterval(iv); r(); });
@@ -462,7 +476,7 @@ function camadasMapa() {
 }
 function irCorredor(dur = 4200) {
   const cantos = [[0, 0], [M.W, 0], [M.W, M.H], [0, M.H]].map(([c, l]) => cel2ll(c, l)), lons = cantos.map(p => p[0]), lats = cantos.map(p => p[1]);
-  const cam = map.cameraForBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: { top: 40, bottom: 230, left: 360, right: 340 } });
+  const cam = map.cameraForBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: folga({ top: 40, bottom: 230, left: 360, right: 340 }) });
   map.flyTo({ ...cam, zoom: cam.zoom + 0.1, pitch: 55, bearing: -12, duration: dur, essential: true });
 }
 
@@ -547,7 +561,7 @@ async function abrirJanela(w) {
   await construirJanela(); enquadrarJanela();
   const jd = D.janelas[w], cs = [[jd.c0, jd.r0], [jd.c0 + jd.n, jd.r0 + jd.n]].map(([c, l]) => cel2ll(c, l));
   map.fitBounds([[Math.min(cs[0][0], cs[1][0]), Math.min(cs[0][1], cs[1][1])], [Math.max(cs[0][0], cs[1][0]), Math.max(cs[0][1], cs[1][1])]],
-    { padding: { top: 60, bottom: 230, left: 380, right: S.grande ? 60 : 520 }, pitch: 50, bearing: map.getBearing(), duration: 2200, maxZoom: 13 });
+    { padding: folga({ top: 60, bottom: 230, left: 380, right: S.grande ? 60 : 520 }), pitch: 50, bearing: map.getBearing(), duration: 2200, maxZoom: 13 });
 }
 function fecharJanela() { S.janela = -1; infoJanela = null; rotJ.forEach(r => r.el.remove()); rotJ = []; document.body.classList.remove('inset-aberto'); document.querySelectorAll('.janela').forEach(b => b.classList.remove('on')); statsJanela(); }
 $('ins-fechar').addEventListener('click', fecharJanela);
@@ -651,7 +665,9 @@ function irPara(t, normais = true) {
   painelAno();
   if (Math.round(S.t) !== ultimoAno) { ultimoAno = Math.round(S.t); statsJanela(); }
 }
-function tocar() { if (S.t >= NA - 1) irPara(0); S.tocando = true; $('tl-play').textContent = '❚❚'; $('tl-play').setAttribute('aria-label', 'Pausar'); }
+// a linha do tempo segue o relógio (1,3 s por ano), não o número de quadros: mesma velocidade em qualquer computador
+const RELOGIO = { t0: 0, inicio: 0 };
+function tocar() { if (S.t >= NA - 1) irPara(0); RELOGIO.t0 = S.t; RELOGIO.inicio = performance.now(); S.tocando = true; $('tl-play').textContent = '❚❚'; $('tl-play').setAttribute('aria-label', 'Pausar'); }
 function pausar() { if (!S.tocando) return; S.tocando = false; $('tl-play').textContent = '▶'; $('tl-play').setAttribute('aria-label', 'Animar'); atualizarGeral(true); }
 $('tl-play').addEventListener('click', () => S.tocando ? pausar() : tocar());
 $('tl-slider').addEventListener('input', e => { pausar(); irPara(+e.target.value, false); });
@@ -701,7 +717,7 @@ function setGrande(v) { S.grande = v; $('inset').classList.toggle('grande', v); 
 function camCorredor() {
   const cs = [[0, 0], [M.W, 0], [M.W, M.H], [0, M.H]].map(([c, l]) => cel2ll(c, l));
   return map.cameraForBounds([[Math.min(...cs.map(p => p[0])), Math.min(...cs.map(p => p[1]))], [Math.max(...cs.map(p => p[0])), Math.max(...cs.map(p => p[1]))]],
-    { padding: { top: 170, bottom: 230, left: 60, right: 60 } });
+    { padding: folga({ top: 170, bottom: 230, left: 60, right: 60 }) });
 }
 async function setCor(c) { S.cor = c; $('cor').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.c === c)); atualizarGeral(true); legenda(); if (S.janela >= 0) await construirJanela(); }
 // toca a linha do tempo de 2014 a 2024 pelo relógio (não por quadro): mesma duração em qualquer máquina
@@ -832,8 +848,8 @@ function animar(t) {
   quadroGravacao();
   const dt = tAnt == null ? 0 : Math.min(0.1, (t - tAnt) / 1000); tAnt = t;
   if (S.tocando) {
-    let nt = S.t + dt / 1.3;
-    if (nt >= NA - 1) { if (S.loop) nt = 0; else { irPara(NA - 1); pausar(); } }
+    let nt = RELOGIO.t0 + (performance.now() - RELOGIO.inicio) / 1300;
+    if (nt >= NA - 1) { if (S.loop) { RELOGIO.t0 = 0; RELOGIO.inicio = performance.now(); nt = 0; } else { irPara(NA - 1); pausar(); } }
     if (S.tocando) irPara(nt, false);
   }
   if (girando && !map.isMoving() && S.janela < 0) map.setBearing(map.getBearing() + 0.08);
